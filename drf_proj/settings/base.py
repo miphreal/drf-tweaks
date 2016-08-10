@@ -80,6 +80,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 
+# Authentication
+AUTHENTICATION_BACKENDS = [
+    'drf_proj.apps.base_api.authentication.EmailAuthBackend',
+    'drf_proj.apps.base_api.authentication.UsernameAuthBackend',
+]
+
 # API Settings
 API_LATEST_VERSION_URLS = 'drf_proj.apps.client_api.v1.urls'
 API_DEPRECATED_VERSIONS = {
@@ -89,10 +95,10 @@ API_PENDING_DEPRECATION_VERSIONS = {
     '0.0.2': '2020-12-31',
 }
 REST_FRAMEWORK = {
-    'DEFAULT_VERSION': '1.2.0',
+    'DEFAULT_VERSION': '1.1.0',
     'ALLOWED_VERSIONS': (
         '0.0.2',
-        '1.0.0', '1.1.1', '1.2.0',
+        '1.0.0', '1.1.0',
         'latest',
     ),
     'DEFAULT_RENDERER_CLASSES': [
@@ -105,6 +111,9 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': [
         'rest_framework.filters.DjangoFilterBackend',
         'drf_proj.apps.base_api.ordering_backend.CustomOrderingBackend',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'drf_proj.apps.base_api.authentication.APIAuthentication',
     ],
     'DEFAULT_METADATA_CLASS': 'drf_proj.apps.base_api.metadata.CustomMetadata',
     'VIEW_DESCRIPTION_FUNCTION': 'drf_proj.apps.base_api.renderers.get_view_description',

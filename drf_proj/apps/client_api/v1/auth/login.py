@@ -17,6 +17,11 @@ class CredentialsValidator(BaseValidator):
     password = serializers.CharField(max_length=32)
 
 
+class CredentialsValidatorV1M1P0(BaseValidator):
+    email = serializers.CharField()
+    password = serializers.CharField(max_length=32)
+
+
 # Serializer
 class UserSerializer(BaseSerializer):
     id = serializers.IntegerField()
@@ -32,6 +37,11 @@ class LoginView(BaseView):
     permission_classes = (AllowAny,)
     validator_class = CredentialsValidator
     serializer_class = UserSerializer
+
+    def get_validator_class(self):
+        if self.check_version('>=1.1.0'):
+            return CredentialsValidatorV1M1P0
+        return CredentialsValidator
 
     def list(self, request, *args, **kwargs):
         if self.request.user.is_authenticated:

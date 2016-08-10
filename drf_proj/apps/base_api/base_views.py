@@ -1,6 +1,5 @@
 from collections import Iterable
 import re
-from uuid import UUID
 
 from django.conf import settings
 from rest_framework import viewsets, exceptions, serializers, status
@@ -81,28 +80,6 @@ class BaseView(viewsets.GenericViewSet, PaginationSerializerMixin):
         return validator_class(
             instance, data=data, many=many, partial=partial, context=context
         )
-
-    def get_object_pk(self):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        return self.kwargs.get(lookup_url_kwarg, None)
-
-    @property
-    def is_collection_api_call(self):
-        return self.suffix == 'List'
-
-    def is_pk(self, value):
-        if isinstance(value, int):
-            return True
-
-        try:
-            UUID(value)
-            return True
-        except ValueError:
-            return False
-
-    @property
-    def is_json_negotiation(self):
-        return self.request.accepted_media_type == 'application/json'
 
     @property
     def fetching_fields(self):
@@ -196,14 +173,14 @@ class BaseReadView(BaseView):
                 count_items=total_items_count,
                 limit=(paginator.end - paginator.start
                        if paginator.end is not None
-                       else first(paginator.ALL_ITEMS_FLAGS)),
+                       else next(iter(paginator.ALL_ITEMS_FLAGS), None)),
                 offset=paginator.start)))
         return response
 
     def list(self, request, *args, **kwargs):
         paginator = self._get_paginator()
         collection, all_items = self._get_collection()
-        paginator = self.collection_paginator = paginator(collection=collection)
+        paginator = paginator(collection=collection)
 
         total_items_count = None
         if all_items is not None and self.return_total_number:
