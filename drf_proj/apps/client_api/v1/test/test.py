@@ -5,6 +5,9 @@ from drf_proj.apps.base_api.base_views import BaseView
 
 
 class TestView(BaseView):
+    """
+    Test API endpoint
+    """
     permission_classes = (AllowAny,)
 
     def list(self, request, *args, **kwargs):
