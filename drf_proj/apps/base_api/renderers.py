@@ -47,7 +47,7 @@ def exception_proxy_handler(exc, ctx):
     if status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
         logger.exception(exc)
 
-    return Response(data=exc, status=status_code, headers=headers)
+    return Response(data={'stat': 'err', 'code': 1}, status=status_code, headers=headers)
 
 
 class CustomJSONRenderer(_JSONRenderer):
@@ -58,6 +58,9 @@ class CustomJSONRenderer(_JSONRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         response = None
+
+        # If request API version is in a pending deprecation state
+        # Then attach `Warning` header to `response`
         if renderer_context and 'response' in renderer_context:
             response = renderer_context['response']
             request = renderer_context.get('request')
@@ -65,22 +68,24 @@ class CustomJSONRenderer(_JSONRenderer):
                 response['Warning'] = '299 - "Pending Deprecation: maintained until {}"'.format(
                     settings.API_PENDING_DEPRECATION_VERSIONS[request.version]
                 )
+        #
 
+        # Prepare structured response
         data = self._transform_response(payload=data, response=response)
 
         return super(CustomJSONRenderer, self).render(
-            data, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
+            data=data,
+            accepted_media_type=accepted_media_type,
+            renderer_context=renderer_context
+        )
 
     def _transform_response(self, payload, response=None):
         meta = None
-        overwrite_status = None
-        overwrite_msg = None
 
         if hasattr(response, 'extra'):
             meta = response.extra.get('meta', None)
-            overwrite_status = response.extra.get('status_text', None)
-            overwrite_msg = response.extra.get('msg_text', None)
 
+        # handle type of data which came from controller
         if isinstance(payload, Exception):
             code, data = self._handle_exception(payload)
 
@@ -88,23 +93,29 @@ class CustomJSONRenderer(_JSONRenderer):
             code, data = payload, payload.data
             if data is Code.unset:
                 data = None
-
         else:
             data = payload
             code = Codes.OK
 
+        # prepare response structure
         resp = self._prepare_api_response(data, code, meta)
-
-        if overwrite_msg is not None:
-            resp['msg'] = overwrite_msg
-
-        if overwrite_status is not None:
-            resp['status'] = overwrite_status
 
         return resp
 
     def _prepare_api_response(self, data, code, meta=None):
-        resp = self._serialize_code(code)
+        """
+        Prepares response structure
+         {
+            "code": <error code>,
+            "status": <verbose error code>,
+            "msg": <detailed description>,
+            "data": <resource data>
+         }
+        """
+
+        # Convert `code` object to `status`, `code` and `msg` properties of response
+        resp = self._serialize_code(code)  # e.g. {"code": 1400, "status": "ValidationError", "msg": "Invalid payload"}
+
         resp['data'] = data  # the `data` parameter has higher priority than `code.data`
 
         if meta is not None:

@@ -1,3 +1,4 @@
+from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
@@ -11,6 +12,9 @@ class TestView(BaseView):
     permission_classes = (AllowAny,)
 
     def list(self, request, *args, **kwargs):
+        if request.query_params.get('exception'):
+            raise NotFound('test exception')
+
         return Response({
             'api_version': str(self.version),
             'camelized_data_property': 'data_value'
