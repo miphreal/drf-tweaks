@@ -47,7 +47,7 @@ def exception_proxy_handler(exc, ctx):
     if status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
         logger.exception(exc)
 
-    return Response(data={'stat': 'err', 'code': 1}, status=status_code, headers=headers)
+    return Response(data=exc, status=status_code, headers=headers)
 
 
 class CustomJSONRenderer(_JSONRenderer):
